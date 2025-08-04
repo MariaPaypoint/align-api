@@ -110,6 +110,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# MFA models repository
+mfa-models/
+
 # Spyder project settings
 .spyderproject
 .spyproject

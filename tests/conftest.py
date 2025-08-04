@@ -33,6 +33,20 @@ def client():
         os.remove("test.db")
 
 @pytest.fixture
+def db_session():
+    """Create a fresh database session for each test"""
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+    
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        # Clean up tables after each test
+        Base.metadata.drop_all(bind=engine)
+
+@pytest.fixture
 def sample_audio_file():
     """Create a sample audio file for testing"""
     with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:

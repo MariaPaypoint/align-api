@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import alignment
+from app.routers import alignment, models
 
 app = FastAPI(
     title="Text-Audio Alignment API",
@@ -9,6 +9,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(alignment.router)
+app.include_router(models.router)
 
 @app.get("/")
 def read_root():
