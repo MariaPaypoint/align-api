@@ -20,19 +20,21 @@ router = APIRouter(prefix="/models", tags=["models"])
 def get_models(
     skip: int = 0,
     limit: int = 100,
+    language: str = None,
     db: Session = Depends(get_db)
 ):
-    """Get all MFA models"""
-    models = get_mfa_models(db, skip=skip, limit=limit)
+    """Get all MFA models with optional language filter"""
+    models = get_mfa_models(db, skip=skip, limit=limit, language_code=language)
     return models
 
 @router.get("/by-type/{model_type}", response_model=List[MFAModelResponse])
 def get_models_by_type(
     model_type: ModelType,
+    language: str = None,
     db: Session = Depends(get_db)
 ):
-    """Get MFA models by type"""
-    models = get_mfa_models_by_type(db, model_type=model_type)
+    """Get MFA models by type with optional language filter"""
+    models = get_mfa_models_by_type(db, model_type=model_type, language_code=language)
     return models
 
 @router.get("/languages", response_model=List[LanguageResponse])

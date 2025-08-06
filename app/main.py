@@ -4,7 +4,13 @@ from app.routers import alignment, models
 app = FastAPI(
     title="Text-Audio Alignment API",
     description="API for forced alignment of text and audio files",
-    version="1.0.0"
+    version="1.0.0",
+    swagger_ui_parameters={
+        "deepLinking": True,
+        "displayRequestDuration": True,
+        "defaultModelsExpandDepth": 0,
+        "tryItOutEnabled": True
+    }
 )
 
 # Include routers

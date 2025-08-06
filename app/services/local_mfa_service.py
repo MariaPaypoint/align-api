@@ -133,7 +133,7 @@ class LocalMFAService:
         if not subdirs:
             # No subdirectories, this might be a direct model
             model = {
-                "name": f"{language_code}_{model_type_str}",
+                "name": language_code,
                 "model_type": model_type,
                 "version": "latest",
                 "variant": None,
@@ -163,7 +163,7 @@ class LocalMFAService:
                     # Has version subdirectories
                     for version_dir in version_dirs:
                         version = version_dir.name.lstrip('v')
-                        model_name = f"{language_code}_{variant}_{model_type_str}" if variant else f"{language_code}_{model_type_str}"
+                        model_name = f"{language_code}_{variant}" if variant else language_code
                         
                         model = {
                             "name": model_name,
@@ -177,7 +177,7 @@ class LocalMFAService:
                         logger.debug(f"Added versioned model: {model['name']} v{version}")
                 else:
                     # No version subdirectories
-                    model_name = f"{language_code}_{variant}_{model_type_str}" if variant else f"{language_code}_{model_type_str}"
+                    model_name = f"{language_code}_{variant}" if variant else language_code
                     
                     model = {
                         "name": model_name,

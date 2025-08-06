@@ -59,6 +59,15 @@ class AlignmentQueue(Base):
     text_file_path = Column(String(500), nullable=False)
     original_audio_filename = Column(String(255), nullable=False)
     original_text_filename = Column(String(255), nullable=False)
+    
+    # Model parameters
+    acoustic_model_name = Column(String(255), nullable=False)
+    acoustic_model_version = Column(String(50), nullable=False)
+    dictionary_model_name = Column(String(255), nullable=False)
+    dictionary_model_version = Column(String(50), nullable=False)
+    g2p_model_name = Column(String(255), nullable=True)
+    g2p_model_version = Column(String(50), nullable=True)
+    
     status = Column(Enum(AlignmentStatus), default=AlignmentStatus.PENDING, nullable=False)
     result_path = Column(String(500), nullable=True)
     error_message = Column(Text, nullable=True)
