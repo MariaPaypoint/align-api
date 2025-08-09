@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import Tuple
-from app.services.local_mfa_service import LocalMFAService
-from app.crud import (
+from app.domains.models.services.local_mfa_service import LocalMFAService
+from app.domains.models.crud import (
     get_or_create_language, 
     get_or_create_languages_bulk,
     create_mfa_model, 
@@ -11,7 +11,7 @@ from app.crud import (
     delete_unused_languages,
     count_mfa_models
 )
-from app.schemas import MFAModelCreate
+from app.domains.models.schemas import MFAModelCreate
 import logging
 
 logger = logging.getLogger(__name__)

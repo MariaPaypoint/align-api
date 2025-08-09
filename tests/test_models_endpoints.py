@@ -4,9 +4,9 @@ from unittest.mock import patch, AsyncMock
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import Language, MFAModel, ModelType
-from app.schemas import LanguageCreate, MFAModelCreate
-from app.crud import create_language, create_mfa_model
+from app.domains.models.models import Language, MFAModel, ModelType
+from app.domains.models.schemas import LanguageCreate, MFAModelCreate
+from app.domains.models.crud import create_language, create_mfa_model
 
 
 class TestModelsEndpoints:
@@ -184,7 +184,7 @@ class TestModelsEndpoints:
         assert isinstance(data, list)
         assert len(data) <= 1
     
-    @patch('app.services.mfa_service.MFAModelService.update_models_from_github')
+    @patch('app.domains.models.services.mfa_service.MFAModelService.update_models_from_github')
     def test_update_models_success(self, mock_update, client: TestClient):
         """Test POST /models/update endpoint success"""
         # Mock successful update
@@ -201,7 +201,7 @@ class TestModelsEndpoints:
         
         mock_update.assert_called_once()
     
-    @patch('app.services.mfa_service.MFAModelService.update_models_from_github')
+    @patch('app.domains.models.services.mfa_service.MFAModelService.update_models_from_github')
     def test_update_models_failure(self, mock_update, client: TestClient):
         """Test POST /models/update endpoint failure"""
         # Mock update failure
@@ -215,7 +215,7 @@ class TestModelsEndpoints:
         assert "Failed to update models" in data["detail"]
         assert "GitHub API error" in data["detail"]
     
-    @patch('app.services.mfa_service.MFAModelService.update_models_from_github')
+    @patch('app.domains.models.services.mfa_service.MFAModelService.update_models_from_github')
     def test_update_models_no_updates(self, mock_update, client: TestClient):
         """Test POST /models/update when no updates are needed"""
         # Mock no updates needed

@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.models import ModelType
-from app.crud import create_mfa_model, create_language
-from app.schemas import MFAModelCreate, LanguageCreate
+from app.domains.models.models import ModelType
+from app.domains.models.crud import create_mfa_model, create_language
+from app.domains.models.schemas import MFAModelCreate, LanguageCreate
 
 
 class TestRussianMFAModels:
@@ -200,8 +200,8 @@ class TestRussianMFAModels:
     
     def test_validate_model_lookup_priority(self, db_session, setup_russian_mfa_models):
         """Test that exact name match has priority over suffix match"""
-        from app.crud import validate_model_exists
-        from app.schemas import ModelParameter
+        from app.domains.alignment.crud import validate_model_exists
+        from app.domains.alignment.schemas import ModelParameter
         
         models = setup_russian_mfa_models
         

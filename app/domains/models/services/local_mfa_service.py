@@ -3,7 +3,7 @@ import re
 import subprocess
 from typing import List, Dict, Optional
 from pathlib import Path
-from app.models import ModelType
+from app.domains.models.models import ModelType
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,8 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.models import ModelType
-from app.crud import create_mfa_model, create_language
-from app.schemas import MFAModelCreate, LanguageCreate
+from app.domains.models.models import ModelType
+from app.domains.models.crud import create_mfa_model, create_language
+from app.domains.models.schemas import MFAModelCreate, LanguageCreate
 
 
 class TestUserRequestSuccess:

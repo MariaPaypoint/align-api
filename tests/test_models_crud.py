@@ -1,14 +1,19 @@
 import pytest
 from sqlalchemy.orm import Session
-from app.models import Language, MFAModel, ModelType
-from app.schemas import LanguageCreate, MFAModelCreate
-from app.crud import (
+from app.domains.models.models import Language, MFAModel, ModelType
+from app.domains.models.schemas import LanguageCreate, MFAModelCreate
+from app.domains.models.crud import (
     create_language,
-    get_language_by_code,
-    get_or_create_language,
     create_mfa_model,
+    get_languages,
     get_mfa_models,
     get_mfa_models_by_type,
+    bulk_create_languages,
+    bulk_create_mfa_models,
+)
+from app.domains.models.crud import (
+    get_language_by_code,
+    get_or_create_language,
     get_mfa_model_by_name_type_version,
     delete_all_mfa_models,
     delete_unused_languages
