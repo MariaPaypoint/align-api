@@ -2,7 +2,7 @@ import pytest
 import tempfile
 import os
 from fastapi import UploadFile
-from app.utils import (
+from api.utils import (
     validate_file_extension,
     validate_audio_file,
     validate_text_file,

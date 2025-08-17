@@ -2,10 +2,10 @@ import pytest
 from unittest.mock import AsyncMock, patch
 from sqlalchemy.orm import Session
 
-from app.domains.models.services.mfa_service import MFAModelService
-from app.domains.models.models import Language, MFAModel, ModelType
-from app.domains.models.schemas import LanguageCreate, MFAModelCreate
-from app.domains.models.crud import create_language, create_mfa_model, get_mfa_models, get_languages
+from api.domains.models.services.mfa_service import MFAModelService
+from api.domains.models.models import Language, MFAModel, ModelType
+from api.domains.models.schemas import LanguageCreate, MFAModelCreate
+from api.domains.models.crud import create_language, create_mfa_model, get_mfa_models, get_languages
 
 
 class TestMFAModelService:
@@ -152,7 +152,7 @@ class TestMFAModelService:
         ]
         
         with patch.object(mfa_service.local_service, 'fetch_models') as mock_fetch, \
-             patch('app.domains.models.services.mfa_service.count_mfa_models') as mock_count:
+             patch('api.domains.models.services.mfa_service.count_mfa_models') as mock_count:
             mock_fetch.return_value = fallback_models
             mock_count.return_value = 0  # Simulate empty database
             
@@ -199,7 +199,7 @@ class TestMFAModelService:
         ]
         
         with patch.object(mfa_service.local_service, 'fetch_models') as mock_fetch, \
-             patch('app.domains.models.services.mfa_service.count_mfa_models') as mock_count:
+             patch('api.domains.models.services.mfa_service.count_mfa_models') as mock_count:
             mock_fetch.return_value = duplicate_models
             mock_count.return_value = 0  # Simulate empty database
             

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, Enum
 from sqlalchemy.sql import func
-from app.database import Base
+from api.database import Base
 import enum
 
 

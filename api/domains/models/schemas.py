@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional, List
-from app.domains.models.models import ModelType
+from api.domains.models.models import ModelType
 
 
 # Language schemas

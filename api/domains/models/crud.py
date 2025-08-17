@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from app.domains.models.models import Language, MFAModel, ModelType
-from app.domains.models.schemas import LanguageCreate, MFAModelCreate
+from api.domains.models.models import Language, MFAModel, ModelType
+from api.domains.models.schemas import LanguageCreate, MFAModelCreate
 
 
 # Language CRUD operations

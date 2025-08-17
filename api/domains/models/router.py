@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List
-from app.database import get_db
-from app.domains.models.schemas import (
+from api.database import get_db
+from api.domains.models.schemas import (
     MFAModelResponse, 
     LanguageResponse, 
     ModelsUpdateResponse
 )
-from app.domains.models.crud import get_mfa_models, get_languages, get_mfa_models_by_type
-from app.domains.models.models import ModelType
-from app.domains.models.services.mfa_service import MFAModelService
+from api.domains.models.crud import get_mfa_models, get_languages, get_mfa_models_by_type
+from api.domains.models.models import ModelType
+from api.domains.models.services.mfa_service import MFAModelService
 import logging
 
 logger = logging.getLogger(__name__)

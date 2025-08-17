@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
-from app.domains.alignment.models import AlignmentQueue, AlignmentStatus
-from app.domains.alignment.schemas import AlignmentQueueCreate, AlignmentQueueUpdate, ModelParameter
-from app.domains.models.models import MFAModel, ModelType
+from api.domains.alignment.models import AlignmentQueue, AlignmentStatus
+from api.domains.alignment.schemas import AlignmentQueueCreate, AlignmentQueueUpdate, ModelParameter
+from api.domains.models.models import MFAModel, ModelType
 
 
 def create_alignment_task(db: Session, task: AlignmentQueueCreate, audio_path: str, text_path: str) -> AlignmentQueue:

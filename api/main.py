@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from app.domains.alignment.router import router as alignment_router
-from app.domains.models.router import router as models_router
+from api.domains.alignment.router import router as alignment_router
+from api.domains.models.router import router as models_router
 
 app = FastAPI(
     title="Text-Audio Alignment API",

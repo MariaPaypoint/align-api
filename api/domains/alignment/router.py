@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
-from app.database import get_db
-from app.domains.alignment.schemas import AlignmentQueueResponse, AlignmentQueueUpdate, AlignmentQueueCreate, ModelParameter
-from app.domains.alignment.crud import (
+from api.database import get_db
+from api.domains.alignment.schemas import AlignmentQueueResponse, AlignmentQueueUpdate, AlignmentQueueCreate, ModelParameter
+from api.domains.alignment.crud import (
     create_alignment_task, 
     get_alignment_task, 
     get_alignment_tasks,
@@ -12,8 +12,8 @@ from app.domains.alignment.crud import (
     get_tasks_by_status,
     validate_models_same_language
 )
-from app.domains.alignment.models import AlignmentStatus
-from app.utils import validate_audio_file, validate_text_file, save_uploaded_file
+from api.domains.alignment.models import AlignmentStatus
+from api.utils import validate_audio_file, validate_text_file, save_uploaded_file
 
 router = APIRouter(prefix="/alignment", tags=["alignment"])
 
@@ -188,5 +188,3 @@ def delete_alignment_request(task_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Alignment task not found")
     return {"message": "Task deleted successfully"}
-
-

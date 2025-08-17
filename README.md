@@ -37,7 +37,7 @@ cp .env.sample .env
 python -m alembic upgrade head
 
 # 5. Запуск приложения
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+venv/bin/python -m uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Приложение доступно по адресу: http://localhost:8000

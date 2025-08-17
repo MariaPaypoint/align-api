@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
-from app.domains.alignment.models import AlignmentStatus
+from api.domains.alignment.models import AlignmentStatus
 
 
 # Model parameter schemas for alignment requests
