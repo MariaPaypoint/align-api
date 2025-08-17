@@ -14,7 +14,7 @@ class LocalMFAService:
     def __init__(self, repo_path: str = None):
         if repo_path is None:
             # Default to mfa-models directory in project root
-            self.repo_path = Path(__file__).parent.parent.parent / "mfa-models"
+            self.repo_path = Path("/app/mfa-models")
         else:
             self.repo_path = Path(repo_path)
         
