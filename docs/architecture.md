@@ -183,8 +183,7 @@ sequenceDiagram
     API-->>OO: Log: Task creation started
     API->>API: Валидация файлов и моделей
     API->>MinIO: Загрузить аудио и текст файлы
-    MinIO-->>API: Пути к файлам
-    API->>DB: Сохранить задачу <br>(PENDING) + file paths
+    API->>DB: Сохранить задачу (PENDING)
     DB-->>API: task_id
     API->>MQ: Создать Celery задачу
     API-->>OO: Log: Task created (task_id, user_id)
@@ -203,22 +202,23 @@ sequenceDiagram
     Docker-->>OO: Log: MFA processing completed
     Docker-->>Worker: Результаты выравнивания
     Worker->>MinIO: Сохранить результаты
-    MinIO-->>Worker: Путь к результатам
-    Worker->>DB: Обновить статус (COMPLETED) + result_path
+    Worker->>DB: Обновить статус (COMPLETED)
     Worker-->>OO: Log: Task completed successfully
 
     Note over User, OO: Получение результата и воспроизведение аудио
 
     User->>API: GET /alignment/{task_id}
     API->>DB: Получить данные задачи
-    DB-->>API: Статус и пути к файлам
+    DB-->>API: Статус задачи и метаданные
+    API->>API: Вычислить пути к файлам
     API-->>OO: Log: Task status requested
     API-->>User: Данные задачи + ссылки на файлы
 
     User->>API: GET /alignment/{task_id}/<br>audio/segment?start=10&end=15
     API->>DB: Получить данные задачи
-    DB-->>API: Пути к файлам
-    API->>MinIO: Получить аудио файл
+    DB-->>API: user_id и task_id
+    API->>API: Вычислить путь к аудио файлам
+    API->>MinIO: Получить аудио файлы
     MinIO-->>API: Аудио данные
     API-->>OO: Log: Audio segment served
     API-->>User: Аудио сегмент для воспроизведения
@@ -271,28 +271,35 @@ sequenceDiagram
 ```
 alignment-storage/
 └── {user_id}/
-    ├── corpus/                    # Исходные файлы (краткосрочно)
+    ├── corpus/                    # Исходные файлы корпуса
     │   └── {task_id}/
-    │       ├── 1.wav
-    │       ├── 1.txt
-    │       ├── ...
-    │       ├── N.wav
-    │       └── N.txt
-    └── results/                   # Результаты (долгосрочно)
+    │       ├── {corpus_file_id}.wav    # Аудиофайл с ID из CORPUS_FILES
+    │       ├── {corpus_file_id}.txt    # Текстовый файл с тем же ID
+    │       ├── {corpus_file_id}.wav    # Следующая пара
+    │       ├── {corpus_file_id}.txt
+    │       └── ...
+    └── results/                   # Результаты выравнивания (долгосрочно)
         └── {task_id}/
-            ├── 1.json
-            ├── ...
-            └── N.json
+            ├── {corpus_file_id}.json   # Результат для файла с данным ID
+            ├── {corpus_file_id}.json   # Результат для следующего файла
+            └── ...
 ```
+
+**Логика именования файлов:**
+- `{corpus_file_id}` - ID записи из таблицы `CORPUS_FILES` (например: 15, 23, 47, ...)
+- Аудио и текстовые файлы имеют одинаковый `corpus_file_id`
+- Результаты выравнивания сохраняются с тем же `corpus_file_id`
 
 
 ## API endpoints
 
 #### Домен Alignment (`/alignment/`)
 ```
-POST   /alignment/                    # Создать задачу выравнивания
+# Управление задачами выравнивания
+POST   /alignment/                    # Создать задачу выравнивания (поддержка множественных файлов)
 GET    /alignment/                    # Получить список задач (с фильтром по статусу)
 GET    /alignment/{task_id}           # Получить задачу по ID
+GET    /alignment/{task_id}/files     # Получить список файлов корпуса
 PUT    /alignment/{task_id}           # Обновить задачу
 DELETE /alignment/{task_id}           # Удалить задачу
 ```
@@ -316,17 +323,19 @@ GET    /auth/me                       # Информация о текущем �
 GET    /users/quota                   # Квоты пользователя
 ```
 
-#### API для работы с аудио
+#### API для работы с аудио и файлами корпуса
 ```
-# Воспроизведение сегментов аудио
-GET /alignment/{task_id}/audio/segment?start=10.5&end=15.2
-GET /alignment/{task_id}/audio/word?word=hello
+# Воспроизведение сегментов аудио из конкретного файла корпуса
+GET /alignment/{task_id}/audio/{corpus_file_id}/segment?start=10.5&end=15.2
+GET /alignment/{task_id}/audio/{corpus_file_id}/word?word=hello
 
-# Скачивание файлов
-GET /alignment/{task_id}/download/audio
-GET /alignment/{task_id}/download/text
-GET /alignment/{task_id}/download/result
-GET /alignment/{task_id}/download/all
+# Скачивание файлов корпуса
+GET /alignment/{task_id}/download/corpus                    # Скачать весь корпус (zip)
+GET /alignment/{task_id}/download/audio/{corpus_file_id}    # Скачать конкретный аудиофайл
+GET /alignment/{task_id}/download/text/{corpus_file_id}     # Скачать конкретный текстовый файл
+GET /alignment/{task_id}/download/result/{corpus_file_id}   # Скачать результат для конкретной пары
+GET /alignment/{task_id}/download/results                   # Скачать все результаты (zip)
+GET /alignment/{task_id}/download/all                       # Скачать корпус + результаты (zip)
 ```
 
 #### Мониторинг (`/health/`)
@@ -349,19 +358,22 @@ erDiagram
     ALIGNMENT_QUEUE {
         id int PK
         user_id int FK
-        audio_file_path string
-        text_file_path string
-        original_audio_filename string
-        original_text_filename string
-        status enum "PENDING, PROCESSING, COMPLETED, FAILED"
-        result_path string
-        error_message text
         acoustic_model_id int FK
         dictionary_model_id int FK
         g2p_model_id int FK
+        status enum "PENDING, PROCESSING, COMPLETED, FAILED"
+        error_message text
         celery_task_id string
         created_at datetime
         updated_at datetime
+    }
+
+    CORPUS_FILES {
+        id int PK
+        task_id int FK
+        original_audio_filename string
+        original_text_filename string
+        created_at datetime
     }
 
     LANGUAGES {
@@ -376,8 +388,8 @@ erDiagram
         id int PK
         name string
         model_type enum "ACOUSTIC, G2P, DICTIONARY"
-        version string
         variant string
+        version string
         language_id int FK
         description text
         created_at datetime
@@ -390,8 +402,6 @@ erDiagram
         name string UK
         display_name string
         total_storage_limit bigint
-        corpus_retention_days int
-        result_retention_days int
         max_concurrent_tasks int
         price_monthly decimal
         is_active boolean
@@ -407,7 +417,7 @@ erDiagram
         role enum "user, admin"
         subscription_type_id int FK
         used_storage bigint
-        active_tasks int
+        subscription_ends_at datetime
         is_active boolean
         created_at datetime
         updated_at datetime
@@ -436,12 +446,15 @@ erDiagram
     MFA_MODELS ||--o{ ALIGNMENT_QUEUE : "acoustic_model"
     MFA_MODELS ||--o{ ALIGNMENT_QUEUE : "dictionary_model"
     MFA_MODELS ||--o{ ALIGNMENT_QUEUE : "g2p_model"
+    ALIGNMENT_QUEUE ||--o{ CORPUS_FILES : "has many files"
     ALIGNMENT_QUEUE ||--o{ FILE_STORAGE_METADATA : "has many files"
 ```
 
 ### Описание таблиц
 
 **`alignment_queue`** - Очередь задач выравнивания (Основная таблица для хранения задач MFA)
+
+**`corpus_files`** - Файлы корпуса (Хранит информацию о каждой паре аудио/текст файлов в задании)
 
 **`languages`** - Справочник языков (Поддерживаемые языки для MFA моделей)
 
@@ -458,12 +471,14 @@ erDiagram
 
 ### Квоты
 
-| Подписка | Хранилище | Срок хранения | Параллельные задачи |
+| Подписка | Хранилище | Срок хранения файлов | Параллельные задачи |
 |----------|-----------|------------|-------------------|
-| Free | 1 GB | 7 дней | 1 |
-| Basic | 10 GB | 30 дней | 3 |
-| Pro | 100 GB | 365 дней | 10 |
-| Enterprise | 1 TB | бессрочно | максимально возможное |
+| Free | 1 GB | 3 дня | 1 |
+| Basic | 10 GB | 30 дней после окончания подписки* | 3 |
+| Pro | 100 GB | 30 дней после окончания подписки* | 10 |
+| Enterprise | 1 TB | 30 дней после окончания подписки* | максимально возможное |
+
+*В случае продления подписки, срок хранения файлов продлевается
 
 ### Ограничения
 - **Максимальный размер аудиофайла**: 50MB
@@ -510,7 +525,10 @@ erDiagram
 ### Cron-based очистка
 - **Cron Schedule**: Ежедневная задача очистки в 02:00 через willfarrell/crontab
 - **Cleanup Scripts**: `cleanup/cleanup_expired.py` и `cleanup/cleanup_errors.py`
-- **Expired Files Check**: Поиск файлов с `expires_at < now()`
+- **File Retention Logic**:
+  - Free подписка: файлы удаляются через 3 дня после создания
+  - Платные подписки: файлы удаляются через 30 дней после окончания подписки (`subscription_ends_at + 30 days`)
+  - Активные подписки: файлы не удаляются
 - **MinIO Deletion**: Удаление файлов из объектного хранилища
 - **Metadata Cleanup**: Удаление записей из `file_storage_metadata`
 - **User Quota Update**: Обновление `used_storage` для пользователей
