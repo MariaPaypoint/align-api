@@ -40,16 +40,19 @@
 - test_file_upload_download()
 
 ### ✅ Как проверить результат
-- `docker-compose up` запускает все сервисы без ошибок:
-   - FastAPI доступен на http://localhost:8000
-   - RabbitMQ Management UI доступен на http://localhost:15672
-   - MinIO Console доступен на http://localhost:9001
-   - OpenObserve доступен на http://localhost:5080
-   - Flower доступен на http://localhost:5555
-- Тестирование Celery:
-   - В Python консоли: `from workers.tasks import ping_task; result = ping_task.delay("test")`
-   - В Flower UI видны выполненные задачи
-   - В логах worker'а появляются сообщения о выполнении задач
+
+**Проверки:**
+- [x] Запустить все сервисы: `docker compose up -d`. Проверить, что сервисы запущены:
+   - [x] FastAPI доступен на http://localhost:8000
+   - [x] RabbitMQ Management UI доступен на http://localhost:15672
+   - [x] MinIO Console доступен на http://localhost:9001
+   - [x] OpenObserve доступен на http://localhost:5080
+   - [x] Flower доступен на http://localhost:5555
+- [x] Тестирование Celery:
+   - [x] Запустить Celery worker: `python start_worker.py`
+   - [x] В другом терминале запустить тест: `python test_celery.py`
+   - [x] В Flower UI видны выполненные задачи
+   - [x] В логах worker'а появляются сообщения о выполнении задач
 
 ---
 
