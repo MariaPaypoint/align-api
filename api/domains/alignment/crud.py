@@ -5,7 +5,7 @@ from api.domains.alignment.schemas import AlignmentQueueCreate, AlignmentQueueUp
 from api.domains.models.models import MFAModel, ModelType
 
 
-def create_alignment_task(db: Session, task: AlignmentQueueCreate, audio_path: str, text_path: str) -> AlignmentQueue:
+def create_alignment_task(db: Session, task: AlignmentQueueCreate, audio_path: str, text_path: str, user_id: int) -> AlignmentQueue:
     db_task = AlignmentQueue(
         audio_file_path=audio_path,
         text_file_path=text_path,
@@ -17,6 +17,7 @@ def create_alignment_task(db: Session, task: AlignmentQueueCreate, audio_path: s
         dictionary_model_version=task.dictionary_model.version,
         g2p_model_name=task.g2p_model.name if task.g2p_model else None,
         g2p_model_version=task.g2p_model.version if task.g2p_model else None,
+        user_id=user_id,
         status=AlignmentStatus.PENDING
     )
     db.add(db_task)
@@ -25,16 +26,27 @@ def create_alignment_task(db: Session, task: AlignmentQueueCreate, audio_path: s
     return db_task
 
 
-def get_alignment_task(db: Session, task_id: int) -> Optional[AlignmentQueue]:
-    return db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id).first()
+def get_alignment_task(db: Session, task_id: int, user_id: int = None) -> Optional[AlignmentQueue]:
+    query = db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id)
+    if user_id is not None:
+        query = query.filter(AlignmentQueue.user_id == user_id)
+    return query.first()
 
 
-def get_alignment_tasks(db: Session, skip: int = 0, limit: int = 100) -> List[AlignmentQueue]:
-    return db.query(AlignmentQueue).offset(skip).limit(limit).all()
+def get_alignment_tasks(db: Session, skip: int = 0, limit: int = 100, user_id: int = None, status: AlignmentStatus = None) -> List[AlignmentQueue]:
+    query = db.query(AlignmentQueue)
+    if user_id is not None:
+        query = query.filter(AlignmentQueue.user_id == user_id)
+    if status is not None:
+        query = query.filter(AlignmentQueue.status == status)
+    return query.offset(skip).limit(limit).all()
 
 
-def update_alignment_task(db: Session, task_id: int, task_update: AlignmentQueueUpdate) -> Optional[AlignmentQueue]:
-    db_task = db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id).first()
+def update_alignment_task(db: Session, task_id: int, task_update: AlignmentQueueUpdate, user_id: int = None) -> Optional[AlignmentQueue]:
+    query = db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id)
+    if user_id is not None:
+        query = query.filter(AlignmentQueue.user_id == user_id)
+    db_task = query.first()
     if db_task:
         update_data = task_update.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -44,8 +56,11 @@ def update_alignment_task(db: Session, task_id: int, task_update: AlignmentQueue
     return db_task
 
 
-def delete_alignment_task(db: Session, task_id: int) -> bool:
-    db_task = db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id).first()
+def delete_alignment_task(db: Session, task_id: int, user_id: int = None) -> bool:
+    query = db.query(AlignmentQueue).filter(AlignmentQueue.id == task_id)
+    if user_id is not None:
+        query = query.filter(AlignmentQueue.user_id == user_id)
+    db_task = query.first()
     if db_task:
         db.delete(db_task)
         db.commit()
@@ -53,8 +68,6 @@ def delete_alignment_task(db: Session, task_id: int) -> bool:
     return False
 
 
-def get_tasks_by_status(db: Session, status: AlignmentStatus) -> List[AlignmentQueue]:
-    return db.query(AlignmentQueue).filter(AlignmentQueue.status == status).all()
 
 
 # Model validation functions

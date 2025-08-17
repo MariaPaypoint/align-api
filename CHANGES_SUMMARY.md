@@ -35,7 +35,6 @@
 - `get_alignment_tasks` - возвращает список с моделями
 - `update_alignment_task` - сохраняет совместимость
 - `delete_alignment_task` - без изменений
-- `get_tasks_by_status` - возвращает задачи с моделями
 
 ### ✅ 4. Добавлены фильтры по языку
 

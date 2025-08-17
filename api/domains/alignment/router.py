@@ -11,7 +11,6 @@ from api.domains.alignment.crud import (
     get_alignment_tasks,
     update_alignment_task,
     delete_alignment_task,
-    get_tasks_by_status,
     validate_models_same_language
 )
 from api.domains.alignment.models import AlignmentStatus
@@ -105,7 +104,7 @@ async def create_alignment_request(
         )
         
         # Create task in database
-        db_task = create_alignment_task(db, alignment_request, audio_path, text_path)
+        db_task = create_alignment_task(db, alignment_request, audio_path, text_path, current_user.id)
         
         # Return response using the from_db_model method
         return AlignmentQueueResponse.from_db_model(db_task)
@@ -131,12 +130,7 @@ def get_alignment_requests(
     db: Session = Depends(get_db)
 ):
     """Get all alignment tasks with optional status filter and pagination."""
-    if status:
-        tasks = get_tasks_by_status(db, status=status)
-        # Apply pagination to filtered results
-        tasks = tasks[skip:skip + limit]
-    else:
-        tasks = get_alignment_tasks(db, skip=skip, limit=limit)
+    tasks = get_alignment_tasks(db, skip=skip, limit=limit, user_id=current_user.id, status=status)
     return [AlignmentQueueResponse.from_db_model(task) for task in tasks]
 
 
@@ -155,7 +149,7 @@ def get_alignment_request(
     db: Session = Depends(get_db)
 ):
     """Get a specific alignment task by its ID."""
-    task = get_alignment_task(db, task_id=task_id)
+    task = get_alignment_task(db, task_id=task_id, user_id=current_user.id)
     if task is None:
         raise HTTPException(status_code=404, detail="Alignment task not found")
     return AlignmentQueueResponse.from_db_model(task)
@@ -177,7 +171,7 @@ def update_alignment_request(
     db: Session = Depends(get_db)
 ):
     """Update an existing alignment task."""
-    task = update_alignment_task(db, task_id=task_id, task_update=task_update)
+    task = update_alignment_task(db, task_id=task_id, task_update=task_update, user_id=current_user.id)
     if task is None:
         raise HTTPException(status_code=404, detail="Alignment task not found")
     return AlignmentQueueResponse.from_db_model(task)
@@ -197,7 +191,7 @@ def delete_alignment_request(
     db: Session = Depends(get_db)
 ):
     """Delete an alignment task from the queue."""
-    success = delete_alignment_task(db, task_id=task_id)
+    success = delete_alignment_task(db, task_id=task_id, user_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Alignment task not found")
     return {"message": "Task deleted successfully"}
