@@ -97,22 +97,6 @@ def find_model_by_param(db: Session, model_param: ModelParameter, model_type: Mo
     return model
 
 
-def validate_model_exists(db: Session, model_param: ModelParameter, model_type: ModelType) -> Optional[MFAModel]:
-    """Backward compatibility: returns model object or None (for tests)"""
-    return find_model_by_param(db, model_param, model_type)
-
-
-def validate_model_exists_with_error(db: Session, model_param: ModelParameter, model_type: ModelType) -> Tuple[bool, Optional[str]]:
-    """Validate that a model exists with given name, version and type
-    
-    Returns tuple of (is_valid, error_message)
-    """
-    model = find_model_by_param(db, model_param, model_type)
-    
-    if model:
-        return True, None
-    
-    return False, f"Model '{model_param.name}' version '{model_param.version}' of type '{model_type.value}' not found"
 
 
 def validate_models_same_language(db: Session, 

@@ -2,7 +2,7 @@
 User domain Pydantic schemas.
 """
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 from .models import UserRole
@@ -33,8 +33,7 @@ class UserResponse(BaseModel):
     is_active: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class QuotaResponse(BaseModel):
@@ -58,5 +57,4 @@ class FileMetadataResponse(BaseModel):
     expires_at: Optional[datetime] = None
     access_count: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

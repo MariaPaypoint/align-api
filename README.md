@@ -80,25 +80,57 @@ docker-compose down -v
 
 ## Разработка
 
-### Миграции
+### Миграции (через Docker)
 ```bash
-# Создание новой миграции
-source venv/bin/activate
-python -m alembic revision --autogenerate -m "Description"
+# Применение миграций в контейнере
+docker-compose exec api python -m alembic upgrade head
 
-# Применение миграций
-python -m alembic upgrade head
+# Создание новой миграции
+docker-compose exec api python -m alembic revision --autogenerate -m "Description"
 ```
 
 ### Тестирование
-```bash
-# Запуск всех тестов
-source venv/bin/activate
-python -m pytest
 
-# С покрытием кода
-python -m pytest --cov=app
+#### Быстрый запуск тестов
+
+**Локальное тестирование (рекомендуется для разработки):**
+```bash
+# Запуск основных тестов без Docker
+./test_local.sh
 ```
+
+**Полное тестирование в Docker:**
+```bash
+# Запуск всех тестов с инфраструктурой
+./test_docker.sh
+```
+
+#### Ручное тестирование
+
+**Локальное окружение:**
+```bash
+# Настройка локального окружения
+cp .env.local .env
+source venv/bin/activate
+venv/bin/python -m pip install -r requirements.txt
+
+# Запуск
+venv/bin/python -m pytest --cov=api
+```
+
+**Docker окружение:**
+```bash
+# Запуск Docker окружения
+docker compose up -d
+
+# Запуск всех тестов в контейнере
+docker compose exec api python -m pytest --cov=api
+```
+
+#### Конфигурационные файлы
+
+- `.env` - настройки для локального окружения (SQLite, localhost)
+- `.env.docker` - настройки для Docker окружения (MySQL, service names)
 
 ### API Документация
 

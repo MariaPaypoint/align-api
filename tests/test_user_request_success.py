@@ -11,36 +11,56 @@ class TestUserRequestSuccess:
     @pytest.fixture
     def setup_real_russian_models(self, db_session):
         """Create Russian MFA models exactly as they exist in the real database"""
-        # Create Russian language
-        russian = create_language(db_session, LanguageCreate(code="russian", name="Russian"))
+        # Create Russian language if it doesn't exist
+        from api.domains.models.models import Language
+        russian = db_session.query(Language).filter_by(code="russian").first()
+        if not russian:
+            russian = create_language(db_session, LanguageCreate(code="russian", name="Russian"))
         
-        # Create models with exact names from real database
-        acoustic_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_acoustic",
-            model_type=ModelType.ACOUSTIC,
-            version="3.1.0",
-            language_id=russian.id,
-            variant="mfa",
-            description="Russian acoustic model v3.1.0 (mfa)"
-        ))
+        # Create models with exact names from real database (check if exists first)
+        from api.domains.models.models import MFAModel
         
-        dictionary_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_dictionary",
-            model_type=ModelType.DICTIONARY,
-            version="3.1.0",
-            language_id=russian.id,
-            variant="mfa",
-            description="Russian dictionary model v3.1.0 (mfa)"
-        ))
+        acoustic_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_acoustic", version="3.1.0"
+        ).first()
+        if not acoustic_model:
+            acoustic_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_acoustic",
+                model_type=ModelType.ACOUSTIC,
+                version="3.1.0",
+                language_id=russian.id,
+                variant="mfa",
+                description="Russian acoustic model v3.1.0 (mfa)"
+            ))
         
-        g2p_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_g2p",
-            model_type=ModelType.G2P,
-            version="3.1.0",
-            language_id=russian.id,
-            variant="mfa",
-            description="Russian g2p model v3.1.0 (mfa)"
-        ))
+        dictionary_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_dictionary", version="3.1.0"
+        ).first()
+        if not dictionary_model:
+            dictionary_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_dictionary",
+                model_type=ModelType.DICTIONARY,
+                version="3.1.0",
+                language_id=russian.id,
+                variant="mfa",
+                description="Russian dictionary model v3.1.0 (mfa)"
+            ))
+        
+        g2p_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_g2p", version="3.1.0"
+        ).first()
+        if not g2p_model:
+            g2p_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_g2p",
+                model_type=ModelType.G2P,
+                version="3.1.0",
+                language_id=russian.id,
+                variant="mfa",
+                description="Russian g2p model v3.1.0 (mfa)"
+            ))
+        
+        # Commit changes to ensure models are saved
+        db_session.commit()
         
         return {
             "language": russian,
@@ -50,7 +70,7 @@ class TestUserRequestSuccess:
         }
     
     def test_exact_user_request_success(self, client: TestClient, sample_audio_file, 
-                                       sample_text_file, setup_real_russian_models):
+                                       sample_text_file, setup_real_russian_models, auth_headers):
         """Test the exact request that user made - should now succeed"""
         models = setup_real_russian_models
         
@@ -70,7 +90,8 @@ class TestUserRequestSuccess:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "",  # Empty string as in user's request
                     "g2p_model_version": "",  # Empty string as in user's request
-                }
+                },
+                headers=auth_headers
             )
         
         # Should succeed now (before the fix it would fail with "not found")
@@ -102,7 +123,7 @@ class TestUserRequestSuccess:
         assert data["error_message"] is None
     
     def test_user_request_with_g2p_success(self, client: TestClient, sample_audio_file, 
-                                          sample_text_file, setup_real_russian_models):
+                                          sample_text_file, setup_real_russian_models, auth_headers):
         """Test user request with G2P model included"""
         models = setup_real_russian_models
         
@@ -120,7 +141,8 @@ class TestUserRequestSuccess:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "russian_mfa",  # Now with G2P
                     "g2p_model_version": "3.1.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -134,7 +156,7 @@ class TestUserRequestSuccess:
         assert data["g2p_model"]["version"] == "3.1.0"
     
     def test_backward_compatibility_exact_names(self, client: TestClient, sample_audio_file, 
-                                               sample_text_file, setup_real_russian_models):
+                                               sample_text_file, setup_real_russian_models, auth_headers):
         """Test that exact database names still work (backward compatibility)"""
         models = setup_real_russian_models
         
@@ -153,7 +175,8 @@ class TestUserRequestSuccess:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "russian_mfa_g2p",
                     "g2p_model_version": "3.1.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200

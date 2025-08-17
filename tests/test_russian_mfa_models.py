@@ -1,9 +1,14 @@
 import pytest
+import tempfile
 from fastapi.testclient import TestClient
+from api.domains.alignment.models import AlignmentStatus
 from api.domains.models.models import ModelType
 from api.domains.models.crud import create_mfa_model, create_language
 from api.domains.models.schemas import MFAModelCreate, LanguageCreate
-
+from api.domains.users.models import User, SubscriptionType
+from api.domains.users.crud import UserService
+from api.domains.users.schemas import UserCreate
+from api.domains.auth.security import create_access_token
 
 class TestRussianMFAModels:
     """Tests for Russian MFA models with backward compatibility"""
@@ -11,33 +16,53 @@ class TestRussianMFAModels:
     @pytest.fixture
     def setup_russian_mfa_models(self, db_session):
         """Create Russian MFA models with type suffixes (as they exist in real DB)"""
-        # Create Russian language
-        russian = create_language(db_session, LanguageCreate(code="russian", name="Russian"))
+        # Create Russian language if it doesn't exist
+        from api.domains.models.models import Language
+        russian = db_session.query(Language).filter_by(code="russian").first()
+        if not russian:
+            russian = create_language(db_session, LanguageCreate(code="russian", name="Russian"))
         
-        # Create models with type suffixes (as they exist in real database)
-        acoustic_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_acoustic",
-            model_type=ModelType.ACOUSTIC,
-            version="3.1.0",
-            language_id=russian.id,
-            description="Russian MFA acoustic model"
-        ))
+        # Create models with type suffixes (check if exists first)
+        from api.domains.models.models import MFAModel
         
-        dictionary_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_dictionary",
-            model_type=ModelType.DICTIONARY,
-            version="3.1.0",
-            language_id=russian.id,
-            description="Russian MFA dictionary model"
-        ))
+        acoustic_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_acoustic", version="3.1.0"
+        ).first()
+        if not acoustic_model:
+            acoustic_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_acoustic",
+                model_type=ModelType.ACOUSTIC,
+                version="3.1.0",
+                language_id=russian.id,
+                description="Russian MFA acoustic model"
+            ))
         
-        g2p_model = create_mfa_model(db_session, MFAModelCreate(
-            name="russian_mfa_g2p",
-            model_type=ModelType.G2P,
-            version="3.1.0",
-            language_id=russian.id,
-            description="Russian MFA G2P model"
-        ))
+        dictionary_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_dictionary", version="3.1.0"
+        ).first()
+        if not dictionary_model:
+            dictionary_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_dictionary",
+                model_type=ModelType.DICTIONARY,
+                version="3.1.0",
+                language_id=russian.id,
+                description="Russian MFA dictionary model"
+            ))
+        
+        g2p_model = db_session.query(MFAModel).filter_by(
+            name="russian_mfa_g2p", version="3.1.0"
+        ).first()
+        if not g2p_model:
+            g2p_model = create_mfa_model(db_session, MFAModelCreate(
+                name="russian_mfa_g2p",
+                model_type=ModelType.G2P,
+                version="3.1.0",
+                language_id=russian.id,
+                description="Russian MFA G2P model"
+            ))
+        
+        # Commit changes to ensure models are saved
+        db_session.commit()
         
         return {
             "language": russian,
@@ -47,7 +72,7 @@ class TestRussianMFAModels:
         }
     
     def test_create_alignment_with_russian_mfa_success(self, client: TestClient, sample_audio_file, 
-                                                      sample_text_file, setup_russian_mfa_models):
+                                                      sample_text_file, setup_russian_mfa_models, auth_headers):
         """Test successful creation of alignment task with Russian MFA models using base names"""
         models = setup_russian_mfa_models
         
@@ -65,7 +90,8 @@ class TestRussianMFAModels:
                     "dictionary_model_name": "russian_mfa",
                     "dictionary_model_version": "3.1.0",
                     # G2P model is optional, so we can skip it or provide empty values
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -86,7 +112,7 @@ class TestRussianMFAModels:
         assert "updated_at" in data
     
     def test_create_alignment_with_russian_mfa_and_g2p(self, client: TestClient, sample_audio_file, 
-                                                      sample_text_file, setup_russian_mfa_models):
+                                                      sample_text_file, setup_russian_mfa_models, auth_headers):
         """Test creation with Russian MFA models including G2P"""
         models = setup_russian_mfa_models
         
@@ -104,7 +130,8 @@ class TestRussianMFAModels:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "russian_mfa",
                     "g2p_model_version": "3.1.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -117,7 +144,7 @@ class TestRussianMFAModels:
         assert data["g2p_model"]["version"] == "3.1.0"
     
     def test_create_alignment_with_exact_model_names(self, client: TestClient, sample_audio_file, 
-                                                    sample_text_file, setup_russian_mfa_models):
+                                                    sample_text_file, setup_russian_mfa_models, auth_headers):
         """Test that exact model names still work (backward compatibility)"""
         models = setup_russian_mfa_models
         
@@ -136,7 +163,8 @@ class TestRussianMFAModels:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "russian_mfa_g2p",
                     "g2p_model_version": "3.1.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -148,7 +176,7 @@ class TestRussianMFAModels:
         assert data["g2p_model"]["name"] == "russian_mfa_g2p"
     
     def test_create_alignment_with_empty_g2p_params(self, client: TestClient, sample_audio_file, 
-                                                   sample_text_file, setup_russian_mfa_models):
+                                                   sample_text_file, setup_russian_mfa_models, auth_headers):
         """Test creation with empty G2P parameters (as in user's request)"""
         models = setup_russian_mfa_models
         
@@ -166,7 +194,8 @@ class TestRussianMFAModels:
                     "dictionary_model_version": "3.1.0",
                     "g2p_model_name": "",  # Empty string
                     "g2p_model_version": "",  # Empty string
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -176,7 +205,7 @@ class TestRussianMFAModels:
         assert data["g2p_model"] is None
     
     def test_create_alignment_nonexistent_version(self, client: TestClient, sample_audio_file, 
-                                                 sample_text_file, setup_russian_mfa_models):
+                                                 sample_text_file, setup_russian_mfa_models, auth_headers):
         """Test creation with non-existent version"""
         models = setup_russian_mfa_models
         
@@ -192,7 +221,8 @@ class TestRussianMFAModels:
                     "acoustic_model_version": "999.0.0",  # Non-existent version
                     "dictionary_model_name": "russian_mfa",
                     "dictionary_model_version": "3.1.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 400
@@ -200,7 +230,7 @@ class TestRussianMFAModels:
     
     def test_validate_model_lookup_priority(self, db_session, setup_russian_mfa_models):
         """Test that exact name match has priority over suffix match"""
-        from api.domains.alignment.crud import validate_model_exists
+        from api.domains.alignment.crud import find_model_by_param
         from api.domains.alignment.schemas import ModelParameter
         
         models = setup_russian_mfa_models
@@ -216,7 +246,7 @@ class TestRussianMFAModels:
         
         # Test that exact match is found first
         model_param = ModelParameter(name="russian_mfa", version="3.1.0")
-        found_model = validate_model_exists(db_session, model_param, ModelType.ACOUSTIC)
+        found_model = find_model_by_param(db_session, model_param, ModelType.ACOUSTIC)
         
         # Should find the exact match, not the suffixed one
         assert found_model is not None

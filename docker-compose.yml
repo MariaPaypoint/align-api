@@ -3,9 +3,8 @@ services:
   mysql:
     image: mysql:8.0
     container_name: alignment_mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
+    env_file:
+      - .env.docker
     ports:
       - "3306:3306"
     volumes:
@@ -21,9 +20,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.12-management
     container_name: alignment_rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    env_file:
+      - .env.docker
     ports:
       - "5672:5672"      # AMQP port
       - "15672:15672"    # Management UI
@@ -41,9 +39,8 @@ services:
   minio:
     image: minio/minio:latest
     container_name: alignment_minio
-    environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    env_file:
+      - .env.docker
     ports:
       - "9000:9000"     # API port
       - "9001:9001"     # Console port
@@ -62,9 +59,9 @@ services:
   openobserve:
     image: public.ecr.aws/zinclabs/openobserve:latest
     container_name: alignment_openobserve
+    env_file:
+      - .env.docker
     environment:
-      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL}
-      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD}
       ZO_DATA_DIR: /data
     ports:
       - "5080:5080"
@@ -82,18 +79,10 @@ services:
   api:
     build: .
     container_name: alignment_api
+    env_file:
+      - .env.docker
     ports:
       - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=mysql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
-      - CELERY_BROKER_URL=amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USER=${DB_USER}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_NAME=${DB_NAME}
     depends_on:
       mysql:
         condition: service_healthy
@@ -109,9 +98,11 @@ services:
   flower:
     image: mher/flower:2.0.1
     container_name: alignment_flower
+    env_file:
+      - .env.docker
     environment:
-      CELERY_BROKER_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@rabbitmq:5672//
       FLOWER_PORT: 5555
+    # Other environment variables loaded from .env.docker via env_file
     ports:
       - "5555:5555"
     depends_on:

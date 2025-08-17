@@ -3,43 +3,15 @@ Tests for user system (Step 2).
 """
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from api.main import app
-from api.database import get_db, Base
 from api.domains.users.models import User, SubscriptionType
 from api.domains.users.crud import UserService
 from api.domains.auth.security import get_password_hash
 
-# Test database setup
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def override_get_db():
-    try:
-        db = TestingSessionLocal()
-        yield db
-    finally:
-        db.close()
-
-app.dependency_overrides[get_db] = override_get_db
-
-client = TestClient(app)
-
 @pytest.fixture
-def setup_database():
+def setup_database(db_session):
     """Setup test database with sample data."""
-    Base.metadata.create_all(bind=engine)
-    
     # Create subscription types
-    db = TestingSessionLocal()
-    
-    # Add subscription types if they don't exist
-    free_sub = db.query(SubscriptionType).filter(SubscriptionType.name == "free").first()
+    free_sub = db_session.query(SubscriptionType).filter(SubscriptionType.name == "free").first()
     if not free_sub:
         free_sub = SubscriptionType(
             name="free",
@@ -49,9 +21,9 @@ def setup_database():
             price_monthly=0.00,
             is_active=True
         )
-        db.add(free_sub)
+        db_session.add(free_sub)
         
-    basic_sub = db.query(SubscriptionType).filter(SubscriptionType.name == "basic").first()
+    basic_sub = db_session.query(SubscriptionType).filter(SubscriptionType.name == "basic").first()
     if not basic_sub:
         basic_sub = SubscriptionType(
             name="basic",
@@ -61,18 +33,13 @@ def setup_database():
             price_monthly=9.99,
             is_active=True
         )
-        db.add(basic_sub)
+        db_session.add(basic_sub)
     
-    db.commit()
-    db.close()
-    
+    db_session.commit()
     yield
-    
-    # Cleanup
-    Base.metadata.drop_all(bind=engine)
 
 
-def test_user_registration(setup_database):
+def test_user_registration(setup_database, client):
     """Test user registration."""
     user_data = {
         "email": "test@example.com",
@@ -92,7 +59,7 @@ def test_user_registration(setup_database):
     assert data["is_active"] == True
 
 
-def test_user_registration_duplicate_email(setup_database):
+def test_user_registration_duplicate_email(setup_database, client):
     """Test user registration with duplicate email."""
     user_data = {
         "email": "duplicate@example.com",
@@ -112,7 +79,7 @@ def test_user_registration_duplicate_email(setup_database):
     assert "Email already registered" in response.json()["detail"]
 
 
-def test_user_registration_duplicate_username(setup_database):
+def test_user_registration_duplicate_username(setup_database, client):
     """Test user registration with duplicate username."""
     user_data = {
         "email": "user1@example.com",
@@ -132,7 +99,7 @@ def test_user_registration_duplicate_username(setup_database):
     assert "Username already taken" in response.json()["detail"]
 
 
-def test_user_login(setup_database):
+def test_user_login(setup_database, client):
     """Test user login."""
     # First register a user
     user_data = {
@@ -158,7 +125,7 @@ def test_user_login(setup_database):
     assert data["token_type"] == "bearer"
 
 
-def test_user_login_invalid_credentials(setup_database):
+def test_user_login_invalid_credentials(setup_database, client):
     """Test user login with invalid credentials."""
     login_data = {
         "username": "nonexistent",
@@ -171,7 +138,7 @@ def test_user_login_invalid_credentials(setup_database):
     assert "Incorrect username or password" in response.json()["detail"]
 
 
-def test_protected_endpoint_without_token(setup_database):
+def test_protected_endpoint_without_token(setup_database, client):
     """Test protected endpoint without authentication token."""
     response = client.get("/auth/me")
     
@@ -179,7 +146,7 @@ def test_protected_endpoint_without_token(setup_database):
     assert "Not authenticated" in response.json()["detail"]
 
 
-def test_protected_endpoint_with_token(setup_database):
+def test_protected_endpoint_with_token(setup_database, client):
     """Test protected endpoint with valid token."""
     # Register and login
     user_data = {
@@ -207,7 +174,7 @@ def test_protected_endpoint_with_token(setup_database):
     assert data["email"] == "protected@example.com"
 
 
-def test_quota_limits(setup_database):
+def test_quota_limits(setup_database, client):
     """Test user quota information."""
     # Register and login
     user_data = {
@@ -238,7 +205,7 @@ def test_quota_limits(setup_database):
     assert data["subscription_type"] == "Free"
 
 
-def test_protected_alignment_endpoint(setup_database):
+def test_protected_alignment_endpoint(setup_database, client):
     """Test that alignment endpoints require authentication."""
     # Try to access alignment endpoint without token
     response = client.get("/alignment/")
@@ -246,50 +213,46 @@ def test_protected_alignment_endpoint(setup_database):
     assert response.status_code == 403
 
 
-def test_user_service_methods(setup_database):
+def test_user_service_methods(setup_database, db_session):
     """Test UserService methods directly."""
-    db = TestingSessionLocal()
+    db = db_session
     
-    try:
-        # Test user creation
-        from api.domains.users.schemas import UserCreate
-        user_create = UserCreate(
-            email="service@example.com",
-            username="serviceuser",
-            password="testpassword123"
-        )
-        
-        user = UserService.create_user(db, user_create)
-        assert user.email == "service@example.com"
-        assert user.username == "serviceuser"
-        assert user.subscription_type.name == "free"
-        
-        # Test user authentication
-        auth_user = UserService.authenticate_user(db, "serviceuser", "testpassword123")
-        assert auth_user is not None
-        assert auth_user.id == user.id
-        
-        # Test wrong password
-        wrong_auth = UserService.authenticate_user(db, "serviceuser", "wrongpassword")
-        assert wrong_auth is None
-        
-        # Test quota check
-        quota = UserService.get_user_quota(db, user.id)
-        assert quota is not None
-        assert quota.total_storage_limit == 1073741824
-        
-        # Test storage quota check
-        has_quota = UserService.check_storage_quota(db, user.id, 1000000)  # 1MB
-        assert has_quota == True
-        
-        no_quota = UserService.check_storage_quota(db, user.id, 2000000000)  # 2GB
-        assert no_quota == False
-        
-    finally:
-        db.close()
+    # Test user creation
+    from api.domains.users.schemas import UserCreate
+    user_create = UserCreate(
+        email="service@example.com",
+        username="serviceuser",
+        password="testpassword123"
+    )
+    
+    user = UserService.create_user(db, user_create)
+    assert user.email == "service@example.com"
+    assert user.username == "serviceuser"
+    assert user.subscription_type.name == "free"
+    
+    # Test user authentication
+    auth_user = UserService.authenticate_user(db, "serviceuser", "testpassword123")
+    assert auth_user is not None
+    assert auth_user.id == user.id
+    
+    # Test wrong password
+    wrong_auth = UserService.authenticate_user(db, "serviceuser", "wrongpassword")
+    assert wrong_auth is None
+    
+    # Test quota check
+    quota = UserService.get_user_quota(db, user.id)
+    assert quota is not None
+    assert quota.total_storage_limit == 1073741824
+    
+    # Test storage quota check
+    has_quota = UserService.check_storage_quota(db, user.id, 1000000)  # 1MB
+    assert has_quota == True
+    
+    no_quota = UserService.check_storage_quota(db, user.id, 2000000000)  # 2GB
+    assert no_quota == False
 
 
-def test_jwt_token_expiration(setup_database):
+def test_jwt_token_expiration(setup_database, client):
     """Test JWT token with invalid/expired format."""
     headers = {"Authorization": "Bearer invalid.token.here"}
     response = client.get("/auth/me", headers=headers)

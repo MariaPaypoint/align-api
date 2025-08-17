@@ -49,7 +49,7 @@ class TestAlignmentWithModels:
         }
     
     def test_create_alignment_with_models_success(self, client: TestClient, sample_audio_file, 
-                                                sample_text_file, setup_test_models):
+                                                sample_text_file, setup_test_models, auth_headers):
         """Test successful creation of alignment task with model parameters"""
         models = setup_test_models
         
@@ -67,7 +67,8 @@ class TestAlignmentWithModels:
                     "dictionary_model_version": models["dictionary"].version,
                     "g2p_model_name": models["g2p"].name,
                     "g2p_model_version": models["g2p"].version,
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -89,7 +90,7 @@ class TestAlignmentWithModels:
         assert "updated_at" in data
     
     def test_create_alignment_without_g2p_model(self, client: TestClient, sample_audio_file, 
-                                              sample_text_file, setup_test_models):
+                                              sample_text_file, setup_test_models, auth_headers):
         """Test creation without optional G2P model"""
         models = setup_test_models
         
@@ -105,7 +106,8 @@ class TestAlignmentWithModels:
                     "acoustic_model_version": models["acoustic"].version,
                     "dictionary_model_name": models["dictionary"].name,
                     "dictionary_model_version": models["dictionary"].version,
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 200
@@ -113,7 +115,7 @@ class TestAlignmentWithModels:
         assert data["g2p_model"] is None
     
     def test_create_alignment_nonexistent_acoustic_model(self, client: TestClient, sample_audio_file, 
-                                                       sample_text_file, setup_test_models):
+                                                       sample_text_file, setup_test_models, auth_headers):
         """Test creation with non-existent acoustic model"""
         models = setup_test_models
         
@@ -129,14 +131,15 @@ class TestAlignmentWithModels:
                     "acoustic_model_version": "1.0.0",
                     "dictionary_model_name": models["dictionary"].name,
                     "dictionary_model_version": models["dictionary"].version,
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 400
         assert "not found" in response.json()["detail"].lower()
     
     def test_create_alignment_nonexistent_dictionary_model(self, client: TestClient, sample_audio_file, 
-                                                         sample_text_file, setup_test_models):
+                                                         sample_text_file, setup_test_models, auth_headers):
         """Test creation with non-existent dictionary model"""
         models = setup_test_models
         
@@ -152,14 +155,15 @@ class TestAlignmentWithModels:
                     "acoustic_model_version": models["acoustic"].version,
                     "dictionary_model_name": "nonexistent_dictionary",
                     "dictionary_model_version": "1.0.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 400
         assert "not found" in response.json()["detail"].lower()
     
     def test_create_alignment_models_different_languages(self, client: TestClient, sample_audio_file, 
-                                                        sample_text_file, db_session):
+                                                       sample_text_file, db_session, auth_headers):
         """Test creation with models from different languages"""
         # Create two different languages
         lang1 = create_language(db_session, LanguageCreate(code="en", name="English"))
@@ -173,7 +177,7 @@ class TestAlignmentWithModels:
             language_id=lang1.id
         ))
         
-        dictionary_ru = create_mfa_model(db_session, MFAModelCreate(
+        dictionary_model_different_lang = create_mfa_model(db_session, MFAModelCreate(
             name="russian_dictionary",
             model_type=ModelType.DICTIONARY,
             version="1.0.0",
@@ -190,16 +194,17 @@ class TestAlignmentWithModels:
                 data={
                     "acoustic_model_name": acoustic_en.name,
                     "acoustic_model_version": acoustic_en.version,
-                    "dictionary_model_name": dictionary_ru.name,
-                    "dictionary_model_version": dictionary_ru.version,
-                }
+                    "dictionary_model_name": dictionary_model_different_lang.name,
+                    "dictionary_model_version": dictionary_model_different_lang.version,
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 400
         assert "same language" in response.json()["detail"].lower()
     
     def test_create_alignment_missing_required_parameters(self, client: TestClient, sample_audio_file, 
-                                                        sample_text_file):
+                                                        sample_text_file, auth_headers):
         """Test creation with missing required model parameters"""
         with open(sample_audio_file, "rb") as audio, open(sample_text_file, "rb") as text:
             response = client.post(
@@ -213,13 +218,14 @@ class TestAlignmentWithModels:
                     # Missing acoustic_model_version
                     "dictionary_model_name": "test_dictionary",
                     "dictionary_model_version": "1.0.0",
-                }
+                },
+                headers=auth_headers
             )
         
         assert response.status_code == 422  # Validation error
     
     def test_get_alignment_task_with_models(self, client: TestClient, sample_audio_file, 
-                                          sample_text_file, setup_test_models):
+                                          sample_text_file, setup_test_models, auth_headers):
         """Test getting alignment task with model information"""
         models = setup_test_models
         
@@ -236,13 +242,14 @@ class TestAlignmentWithModels:
                     "acoustic_model_version": models["acoustic"].version,
                     "dictionary_model_name": models["dictionary"].name,
                     "dictionary_model_version": models["dictionary"].version,
-                }
+                },
+                headers=auth_headers
             )
         
         task_id = create_response.json()["id"]
         
         # Get the task
-        response = client.get(f"/alignment/{task_id}")
+        response = client.get(f"/alignment/{task_id}", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()
@@ -250,7 +257,7 @@ class TestAlignmentWithModels:
         assert data["dictionary_model"]["name"] == models["dictionary"].name
     
     def test_get_all_alignment_tasks_with_models(self, client: TestClient, sample_audio_file, 
-                                               sample_text_file, setup_test_models):
+                                               sample_text_file, setup_test_models, auth_headers):
         """Test getting all alignment tasks with model information"""
         models = setup_test_models
         
@@ -267,11 +274,12 @@ class TestAlignmentWithModels:
                     "acoustic_model_version": models["acoustic"].version,
                     "dictionary_model_name": models["dictionary"].name,
                     "dictionary_model_version": models["dictionary"].version,
-                }
+                },
+                headers=auth_headers
             )
         
         # Get all tasks
-        response = client.get("/alignment/")
+        response = client.get("/alignment/", headers=auth_headers)
         assert response.status_code == 200
         
         data = response.json()

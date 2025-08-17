@@ -1,0 +1,33 @@
+# Development files
+.git
+.gitignore
+.vscode/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Testing files
+test_*.db
+*.sqlite
+manual_test_celery.py
+
+# Local data
+data/
+logs/
+
+# Environment files
+.env.local
+.env
+
+# Documentation
+*.md
+docs/
+
+# CI/CD files
+.github/

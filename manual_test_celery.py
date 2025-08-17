@@ -33,40 +33,39 @@ def test_ping_task():
             print(f"   - Timestamp: {task_result.get('timestamp', 'N/A')}")
             print(f"   - Worker ID: {task_result.get('worker_id', 'N/A')}")
             print(f"   - Status: {task_result.get('status', 'N/A')}")
-            return True
             
         except Exception as e:
             print(f"❌ Ошибка при получении результата: {e}")
             print(f"📊 Финальный статус: {result.status}")
-            return False
+            raise
             
     except ImportError as e:
         print(f"❌ Ошибка импорта: {e}")
         print("💡 Убедитесь, что Celery worker запущен и доступен")
-        return False
+        raise
     except Exception as e:
         print(f"❌ Неожиданная ошибка: {e}")
-        return False
+        raise
 
 def main():
     """Основная функция."""
     print("🧪 Тестирование Celery ping_task")
     print("=" * 50)
     
-    success = test_ping_task()
-    
-    print("=" * 50)
-    if success:
+    try:
+        test_ping_task()
+        print("=" * 50)
         print("✅ Тест успешно пройден!")
         print("💡 Проверьте Flower UI (http://localhost:5555) для просмотра задачи")
-    else:
+        return 0
+    except Exception:
+        print("=" * 50)
         print("❌ Тест не пройден")
         print("💡 Убедитесь, что:")
         print("   1. docker-compose up запущен")
         print("   2. Celery worker запущен: python start_worker.py")
         print("   3. RabbitMQ доступен на localhost:5672")
-    
-    return 0 if success else 1
+        return 1
 
 if __name__ == "__main__":
     sys.exit(main())
