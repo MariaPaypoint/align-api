@@ -91,22 +91,6 @@ docker-compose exec api python -m alembic revision --autogenerate -m "Descriptio
 
 ### Тестирование
 
-#### Быстрый запуск тестов
-
-**Локальное тестирование (рекомендуется для разработки):**
-```bash
-# Запуск основных тестов без Docker
-./test_local.sh
-```
-
-**Полное тестирование в Docker:**
-```bash
-# Запуск всех тестов с инфраструктурой
-./test_docker.sh
-```
-
-#### Ручное тестирование
-
 **Локальное окружение:**
 ```bash
 # Настройка локального окружения
@@ -127,7 +111,7 @@ docker compose up -d
 docker compose exec api python -m pytest --cov=api
 ```
 
-#### Конфигурационные файлы
+### Конфигурационные файлы
 
 - `.env` - настройки для локального окружения (SQLite, localhost)
 - `.env.docker` - настройки для Docker окружения (MySQL, service names)
