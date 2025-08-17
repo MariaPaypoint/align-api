@@ -38,9 +38,6 @@ def upgrade() -> None:
     op.drop_column('alignment_queue', 'dictionary_name')
     op.drop_column('alignment_queue', 'dictionary_version')
     
-    # Drop unused model_name column
-    op.drop_column('alignment_queue', 'model_name')
-
 
 def downgrade() -> None:
     # Add old columns back
@@ -62,5 +59,3 @@ def downgrade() -> None:
     op.drop_column('alignment_queue', 'dictionary_model_name')
     op.drop_column('alignment_queue', 'dictionary_model_version')
     
-    # Add back model_name column (for downgrade)
-    op.add_column('alignment_queue', sa.Column('model_name', sa.String(100), nullable=True))
