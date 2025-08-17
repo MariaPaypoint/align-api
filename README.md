@@ -195,20 +195,19 @@ alembic upgrade head
 Запуск всех тестов:
 
 ```bash
-source venv/bin/activate
-python -m pytest
+venv/bin/python -m pytest
 ```
 
 Запуск тестов с отчетом о покрытии:
 
 ```bash
-python -m pytest --cov=app
+venv/bin/python -m pytest --cov=app
 ```
 
 Запуск тестов с подробным выводом:
 
 ```bash
-python -m pytest -v
+venv/bin/python -m pytest -v
 ```
 
 Запуск конкретного теста:

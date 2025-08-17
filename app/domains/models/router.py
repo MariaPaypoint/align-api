@@ -19,31 +19,24 @@ router = APIRouter(prefix="/models", tags=["models"])
 @router.get("/", 
     response_model=List[MFAModelResponse],
     summary="List MFA models",
-    description="Retrieve all MFA models with optional language filtering and pagination."
+    description="Retrieve all MFA models with optional type and language filtering and pagination."
 )
 def get_models(
     skip: int = 0,
     limit: int = 100,
     language: str = None,
+    model_type: ModelType = None,
     db: Session = Depends(get_db)
 ):
-    """Get all MFA models with optional language filter and pagination."""
-    models = get_mfa_models(db, skip=skip, limit=limit, language_code=language)
+    """Get all MFA models with optional type and language filters and pagination."""
+    if model_type:
+        models = get_mfa_models_by_type(db, model_type=model_type, language_code=language)
+        # Apply pagination to filtered results
+        models = models[skip:skip + limit]
+    else:
+        models = get_mfa_models(db, skip=skip, limit=limit, language_code=language)
     return models
 
-@router.get("/by-type/{model_type}", 
-    response_model=List[MFAModelResponse],
-    summary="Get models by type",
-    description="Retrieve MFA models filtered by type (ACOUSTIC, DICTIONARY, G2P) with optional language filter."
-)
-def get_models_by_type(
-    model_type: ModelType,
-    language: str = None,
-    db: Session = Depends(get_db)
-):
-    """Get MFA models filtered by type (ACOUSTIC, DICTIONARY, G2P) with optional language filter."""
-    models = get_mfa_models_by_type(db, model_type=model_type, language_code=language)
-    return models
 
 @router.get("/languages", 
     response_model=List[LanguageResponse],

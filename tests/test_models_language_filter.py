@@ -128,7 +128,7 @@ class TestModelsLanguageFilter:
     
     def test_get_models_by_type_no_filter(self, client: TestClient, setup_multilang_models):
         """Test getting models by type without language filter"""
-        response = client.get("/models/by-type/acoustic")
+        response = client.get("/models/?model_type=acoustic")
         assert response.status_code == 200
         
         models = response.json()
@@ -146,7 +146,7 @@ class TestModelsLanguageFilter:
     
     def test_get_acoustic_models_filter_by_english(self, client: TestClient, setup_multilang_models):
         """Test getting acoustic models filtered by English language"""
-        response = client.get("/models/by-type/acoustic?language=english")
+        response = client.get("/models/?model_type=acoustic&language=english")
         assert response.status_code == 200
         
         models = response.json()
@@ -159,7 +159,7 @@ class TestModelsLanguageFilter:
     
     def test_get_dictionary_models_filter_by_russian(self, client: TestClient, setup_multilang_models):
         """Test getting dictionary models filtered by Russian language"""
-        response = client.get("/models/by-type/dictionary?language=russian")
+        response = client.get("/models/?model_type=dictionary&language=russian")
         assert response.status_code == 200
         
         models = response.json()
@@ -172,7 +172,7 @@ class TestModelsLanguageFilter:
     
     def test_get_g2p_models_filter_by_spanish(self, client: TestClient, setup_multilang_models):
         """Test getting G2P models filtered by Spanish language"""
-        response = client.get("/models/by-type/g2p?language=spanish")
+        response = client.get("/models/?model_type=g2p&language=spanish")
         assert response.status_code == 200
         
         models = response.json()
@@ -203,5 +203,5 @@ class TestModelsLanguageFilter:
     
     def test_invalid_model_type_with_language_filter(self, client: TestClient, setup_multilang_models):
         """Test invalid model type with language filter"""
-        response = client.get("/models/by-type/invalid?language=english")
+        response = client.get("/models/?model_type=invalid&language=english")
         assert response.status_code == 422  # Validation error for invalid enum value

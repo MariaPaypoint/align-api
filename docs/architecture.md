@@ -290,9 +290,8 @@ alignment-storage/
 
 #### Домен Alignment (`/alignment/`)
 ```
-# Управление задачами выравнивания
 POST   /alignment/                    # Создать задачу выравнивания
-GET    /alignment/                    # Получить список задач
+GET    /alignment/                    # Получить список задач (с фильтром по статусу)
 GET    /alignment/{task_id}           # Получить задачу по ID
 PUT    /alignment/{task_id}           # Обновить задачу
 DELETE /alignment/{task_id}           # Удалить задачу
@@ -300,9 +299,7 @@ DELETE /alignment/{task_id}           # Удалить задачу
 
 #### Домен Models (`/models/`)
 ```
-# Управление MFA моделями
-GET    /models/                       # Получить все модели
-GET    /models/by-type/{model_type}   # Получить модели по типу
+GET    /models/                       # Получить все модели (с фильтрами)
 GET    /models/languages              # Получить языки
 POST   /models/update                 # Обновить модели из репозитория
 ```

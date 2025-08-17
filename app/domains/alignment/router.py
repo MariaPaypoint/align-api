@@ -118,15 +118,21 @@ async def create_alignment_request(
 @router.get("/", 
     response_model=List[AlignmentQueueResponse],
     summary="List alignment tasks",
-    description="Retrieve all alignment tasks with pagination support."
+    description="Retrieve all alignment tasks with optional status filtering and pagination support."
 )
 def get_alignment_requests(
     skip: int = 0, 
-    limit: int = 100, 
+    limit: int = 100,
+    status: AlignmentStatus = None,
     db: Session = Depends(get_db)
 ):
-    """Get all alignment tasks with pagination."""
-    tasks = get_alignment_tasks(db, skip=skip, limit=limit)
+    """Get all alignment tasks with optional status filter and pagination."""
+    if status:
+        tasks = get_tasks_by_status(db, status=status)
+        # Apply pagination to filtered results
+        tasks = tasks[skip:skip + limit]
+    else:
+        tasks = get_alignment_tasks(db, skip=skip, limit=limit)
     return [AlignmentQueueResponse.from_db_model(task) for task in tasks]
 
 
@@ -184,12 +190,3 @@ def delete_alignment_request(task_id: int, db: Session = Depends(get_db)):
     return {"message": "Task deleted successfully"}
 
 
-@router.get("/status/{status}", 
-    response_model=List[AlignmentQueueResponse],
-    summary="Get tasks by status",
-    description="Retrieve all alignment tasks filtered by their current status."
-)
-def get_tasks_by_status_endpoint(status: AlignmentStatus, db: Session = Depends(get_db)):
-    """Get all alignment tasks filtered by status (PENDING, PROCESSING, COMPLETED, FAILED)."""
-    tasks = get_tasks_by_status(db, status=status)
-    return [AlignmentQueueResponse.from_db_model(task) for task in tasks]

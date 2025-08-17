@@ -322,8 +322,8 @@ class TestAlignmentEndpoints:
                 }
             )
         
-        # Get tasks by status
-        response = client.get(f"/alignment/status/{AlignmentStatus.PENDING.value}")
+        # Get tasks by status using query parameter
+        response = client.get(f"/alignment/?status={AlignmentStatus.PENDING.value}")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)

@@ -102,8 +102,8 @@ class TestModelsEndpoints:
         assert len(data) <= 2
     
     def test_get_models_by_type_g2p(self, client: TestClient, sample_data):
-        """Test GET /models/by-type/g2p endpoint"""
-        response = client.get("/models/by-type/g2p")
+        """Test GET /models/ with model_type=g2p query parameter"""
+        response = client.get("/models/?model_type=g2p")
         
         assert response.status_code == 200
         data = response.json()
@@ -118,8 +118,8 @@ class TestModelsEndpoints:
             assert model["model_type"] == "g2p"
     
     def test_get_models_by_type_dictionary(self, client: TestClient, sample_data):
-        """Test GET /models/by-type/dictionary endpoint"""
-        response = client.get("/models/by-type/dictionary")
+        """Test GET /models/ with model_type=dictionary query parameter"""
+        response = client.get("/models/?model_type=dictionary")
         
         assert response.status_code == 200
         data = response.json()
@@ -134,8 +134,8 @@ class TestModelsEndpoints:
             assert model["model_type"] == "dictionary"
     
     def test_get_models_by_type_acoustic(self, client: TestClient, sample_data):
-        """Test GET /models/by-type/acoustic endpoint"""
-        response = client.get("/models/by-type/acoustic")
+        """Test GET /models/ with model_type=acoustic query parameter"""
+        response = client.get("/models/?model_type=acoustic")
         
         assert response.status_code == 200
         data = response.json()
@@ -146,8 +146,8 @@ class TestModelsEndpoints:
         assert len(acoustic_models) >= 1
     
     def test_get_models_by_invalid_type(self, client: TestClient):
-        """Test GET /models/by-type/ with invalid type"""
-        response = client.get("/models/by-type/invalid")
+        """Test GET /models/ with invalid model_type query parameter"""
+        response = client.get("/models/?model_type=invalid")
         
         # Should return 422 for invalid enum value
         assert response.status_code == 422
