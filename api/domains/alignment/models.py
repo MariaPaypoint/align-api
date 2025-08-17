@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text, Enum, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from api.database import Base
 import enum
@@ -20,7 +21,16 @@ class AlignmentQueue(Base):
     original_audio_filename = Column(String(255), nullable=False)
     original_text_filename = Column(String(255), nullable=False)
     
-    # Model parameters
+    # User and task tracking
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    celery_task_id = Column(String(155), nullable=True)
+    
+    # Model parameters with FK references
+    acoustic_model_id = Column(Integer, ForeignKey("mfa_models.id"), nullable=True)
+    dictionary_model_id = Column(Integer, ForeignKey("mfa_models.id"), nullable=True)
+    g2p_model_id = Column(Integer, ForeignKey("mfa_models.id"), nullable=True)
+    
+    # Legacy model parameters (for backward compatibility)
     acoustic_model_name = Column(String(255), nullable=False)
     acoustic_model_version = Column(String(50), nullable=False)
     dictionary_model_name = Column(String(255), nullable=False)
@@ -33,3 +43,6 @@ class AlignmentQueue(Base):
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("api.domains.users.models.User")

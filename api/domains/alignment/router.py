@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import List
 from api.database import get_db
+from api.domains.auth.dependencies import get_current_active_user
+from api.domains.users.models import User
 from api.domains.alignment.schemas import AlignmentQueueResponse, AlignmentQueueUpdate, AlignmentQueueCreate, ModelParameter
 from api.domains.alignment.crud import (
     create_alignment_task, 
@@ -36,6 +38,7 @@ async def create_alignment_request(
     dictionary_model_version: str = Form(..., description="Version of the dictionary model (e.g., '3.1.0')"),
     g2p_model_name: str = Form(None, description="Name of the G2P model (optional, e.g., 'russian_mfa_g2p')"),
     g2p_model_version: str = Form(None, description="Version of the G2P model (optional, e.g., '3.1.0')"),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -124,6 +127,7 @@ def get_alignment_requests(
     skip: int = 0, 
     limit: int = 100,
     status: AlignmentStatus = None,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get all alignment tasks with optional status filter and pagination."""
@@ -145,7 +149,11 @@ def get_alignment_requests(
         404: {"description": "Alignment task not found"}
     }
 )
-def get_alignment_request(task_id: int, db: Session = Depends(get_db)):
+def get_alignment_request(
+    task_id: int, 
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Get a specific alignment task by its ID."""
     task = get_alignment_task(db, task_id=task_id)
     if task is None:
@@ -164,7 +172,8 @@ def get_alignment_request(task_id: int, db: Session = Depends(get_db)):
 )
 def update_alignment_request(
     task_id: int, 
-    task_update: AlignmentQueueUpdate, 
+    task_update: AlignmentQueueUpdate,
+    current_user: User = Depends(get_current_active_user), 
     db: Session = Depends(get_db)
 ):
     """Update an existing alignment task."""
@@ -182,7 +191,11 @@ def update_alignment_request(
         404: {"description": "Alignment task not found"}
     }
 )
-def delete_alignment_request(task_id: int, db: Session = Depends(get_db)):
+def delete_alignment_request(
+    task_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Delete an alignment task from the queue."""
     success = delete_alignment_task(db, task_id=task_id)
     if not success:

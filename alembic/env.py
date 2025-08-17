@@ -21,12 +21,12 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from app.database import Base
+from api.database import Base
 
 # Import domain models so that Base.metadata is aware of all tables
 # (required for autogenerate and consistent metadata)
-from app.domains.alignment import models as alignment_models  # noqa: F401
-from app.domains.models import models as mfa_models  # noqa: F401
+from api.domains.alignment import models as alignment_models  # noqa: F401
+from api.domains.models import models as mfa_models  # noqa: F401
 
 target_metadata = Base.metadata
 
