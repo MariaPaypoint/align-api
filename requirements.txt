@@ -45,6 +45,6 @@ flower==2.0.1
 
 # Step 2: Аутентификация и авторизация  
 python-jose[cryptography]==3.5.0
-passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
 pydantic[email]==2.11.7
 requests==2.31.0

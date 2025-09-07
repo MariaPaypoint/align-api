@@ -9,7 +9,7 @@ import sys
 from sqlalchemy import create_engine, text
 import os
 
-db_url = f'mysql+pymysql://{os.getenv(\"DB_USER\")}:{os.getenv(\"DB_PASSWORD\")}@{os.getenv(\"DB_HOST\")}:{os.getenv(\"DB_PORT\")}/{os.getenv(\"DB_NAME\")}'
+db_url = f'mysql+pymysql://{os.getenv(\"MYSQL_USER\")}:{os.getenv(\"MYSQL_PASSWORD\")}@{os.getenv(\"MYSQL_HOST\")}:{os.getenv(\"MYSQL_PORT\")}/{os.getenv(\"MYSQL_DATABASE\")}'
 max_attempts = 30
 
 for attempt in range(max_attempts):

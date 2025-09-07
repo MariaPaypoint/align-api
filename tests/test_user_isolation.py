@@ -4,23 +4,38 @@
 """
 import requests
 import json
+import os
+import uuid
 
-BASE_URL = "http://localhost:8000"
+# В Docker используем имя сервиса, локально - localhost
+# Определяем окружение по наличию Docker контейнера или переменной CI
+def get_base_url():
+    # Проверяем переменные окружения, которые указывают на Docker/CI окружение
+    if (os.getenv('TESTING_ENV') or 
+        os.getenv('CI') or 
+        os.path.exists('/.dockerenv')):
+        return "http://api:8000"
+    return "http://localhost:8000"
+
+BASE_URL = get_base_url()
 
 def test_user_task_isolation():
     """Проверяем, что пользователи видят только свои задачи"""
     
+    # Генерируем уникальные данные для каждого запуска
+    test_id = str(uuid.uuid4())[:8]
+    
     # Регистрируем двух пользователей
     user1_data = {
-        "email": "user1@test.com",
+        "email": f"user1_{test_id}@test.com",
         "password": "testpass123",
-        "username": "user1"
+        "username": f"user1_{test_id}"
     }
     
     user2_data = {
-        "email": "user2@test.com", 
+        "email": f"user2_{test_id}@test.com", 
         "password": "testpass123",
-        "username": "user2"
+        "username": f"user2_{test_id}"
     }
     
     print("Регистрируем пользователей...")
@@ -34,8 +49,8 @@ def test_user_task_isolation():
     print(f"Регистрация user2: {response.status_code}")
     
     # Авторизация пользователя 1
-    login_data = {"username": user1_data["email"], "password": user1_data["password"]}
-    response = requests.post(f"{BASE_URL}/auth/login", data=login_data)
+    login_data = {"username": user1_data["username"], "password": user1_data["password"]}
+    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
     
     if response.status_code != 200:
         print(f"Ошибка авторизации user1: {response.status_code} - {response.text}")
@@ -45,8 +60,8 @@ def test_user_task_isolation():
     headers1 = {"Authorization": f"Bearer {token1}"}
     
     # Авторизация пользователя 2
-    login_data = {"username": user2_data["email"], "password": user2_data["password"]}
-    response = requests.post(f"{BASE_URL}/auth/login", data=login_data)
+    login_data = {"username": user2_data["username"], "password": user2_data["password"]}
+    response = requests.post(f"{BASE_URL}/auth/login", json=login_data)
     
     if response.status_code != 200:
         print(f"Ошибка авторизации user2: {response.status_code} - {response.text}")

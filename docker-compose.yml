@@ -4,7 +4,7 @@ services:
     image: mysql:8.0
     container_name: alignment_mysql
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "3306:3306"
     volumes:
@@ -21,7 +21,7 @@ services:
     image: rabbitmq:3.12-management
     container_name: alignment_rabbitmq
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "5672:5672"      # AMQP port
       - "15672:15672"    # Management UI
@@ -40,7 +40,7 @@ services:
     image: minio/minio:latest
     container_name: alignment_minio
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "9000:9000"     # API port
       - "9001:9001"     # Console port
@@ -60,7 +60,7 @@ services:
     image: public.ecr.aws/zinclabs/openobserve:latest
     container_name: alignment_openobserve
     env_file:
-      - .env.docker
+      - .env
     environment:
       ZO_DATA_DIR: /data
     ports:
@@ -68,10 +68,7 @@ services:
     volumes:
       - ./data/openobserve:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      disable: true
     networks:
       - alignment_network
 
@@ -80,7 +77,7 @@ services:
     build: .
     container_name: alignment_api
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "8000:8000"
     depends_on:
@@ -94,27 +91,68 @@ services:
     networks:
       - alignment_network
 
+  # Celery Worker
+  worker:
+    build: .
+    container_name: alignment_worker
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./workers:/app/workers
+      - ./shared:/app/shared
+      - ./api:/app/api
+    command: python -m celery -A workers.celery_app worker --loglevel=info --concurrency=2
+    networks:
+      - alignment_network
+
   # Flower (Celery monitoring)
   flower:
     image: mher/flower:2.0.1
     container_name: alignment_flower
     env_file:
-      - .env.docker
-    environment:
-      FLOWER_PORT: 5555
-    # Other environment variables loaded from .env.docker via env_file
+      - .env
     ports:
       - "5555:5555"
     depends_on:
       rabbitmq:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5555/"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5555/')\" || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 40s
     networks:
       - alignment_network
+
+  # Tests service (run with: docker compose run --rm tests)
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.tests
+    container_name: alignment_tests
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      api:
+        condition: service_started
+    volumes:
+      - ./:/app
+    networks:
+      - alignment_network
+    profiles:
+      - test
 
 networks:
   alignment_network:

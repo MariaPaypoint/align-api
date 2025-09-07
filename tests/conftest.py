@@ -8,7 +8,7 @@ from api.domains.users.models import User, SubscriptionType
 from api.domains.users.schemas import UserCreate
 from api.domains.users.crud import UserService
 from api.domains.models.models import Language, MFAModel
-from passlib.context import CryptContext
+import bcrypt
 import requests
 import pika
 from minio import Minio

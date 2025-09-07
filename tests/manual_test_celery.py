@@ -62,7 +62,7 @@ def main():
         print("=" * 50)
         print("❌ Тест не пройден")
         print("💡 Убедитесь, что:")
-        print("   1. docker-compose up запущен")
+        print("   1. docker compose up запущен")
         print("   2. Celery worker запущен: python start_worker.py")
         print("   3. RabbitMQ доступен на localhost:5672")
         return 1

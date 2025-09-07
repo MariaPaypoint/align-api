@@ -10,18 +10,19 @@ import logging
 
 from .models import User, SubscriptionType, FileStorageMetadata, UserRole
 from .schemas import UserCreate, QuotaResponse
-from passlib.context import CryptContext
+import bcrypt
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing rounds
+BCRYPT_ROUNDS = 12
 
 def get_password_hash(password: str) -> str:
     """Hash a password."""
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 logger = logging.getLogger(__name__)
 

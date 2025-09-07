@@ -13,7 +13,7 @@ load_dotenv()
 celery_app = Celery(
     'alignment_workers',
     broker=os.getenv('CELERY_BROKER_URL'),
-    backend='rpc://',  # Use RPC backend for results
+    backend='rpc://',  # Use RPC backend as per architecture
     include=['workers.tasks']  # Include task modules
 )
 
@@ -33,8 +33,8 @@ celery_app.conf.update(
 
 # Task routing configuration
 celery_app.conf.task_routes = {
-    'workers.tasks.ping_task': {'queue': 'default'},
-    'workers.tasks.process_alignment_task': {'queue': 'alignment'},
+    'workers.tasks.ping_task': {'queue': 'celery'},
+    'workers.tasks.process_alignment_task': {'queue': 'celery'},
 }
 
 if __name__ == '__main__':
